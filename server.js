@@ -1,53 +1,45 @@
+require('rootpath')(); // Allow root-relative imports
 const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const morgan = require('morgan');
-const jobRoutes = require('./routes/jobRoutes');
-const userRoutes = require('./routes/userRoutes');
-const homeRoutes = require('./routes/homeRoutes');
 const errorHandler = require('./middleware/errorHandler');
-const applicationRoutes = require('./routes/applicationRoutes');
-const authorizationRoutes = require('./routes/authorizationRoutes');
-// const { connectDB } = require('./data/db');
 
-// Kết nối cơ sở dữ liệu
-// connectDB();
+dotenv.config(); // Load environment variables
 
-// Load environment variables
-dotenv.config();
-
-// Initialize Express app
 const app = express();
 
-// Middleware for parsing JSON
-app.use(express.json());
+// Middleware
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+app.use(cors());
 
-// Logging middleware for development
+// Logging in development mode
 if (process.env.NODE_ENV === 'development') {
     app.use(morgan('dev'));
 }
 
-// Mount routes
-app.use('/api/jobs', jobRoutes);
-app.use('/api/user', userRoutes);
-app.use('/api/home', homeRoutes);
-app.use('/api/applications', applicationRoutes);
-app.use('/api/auth', authorizationRoutes);
+// Mount API controllers
+app.use('/api/users', require('./controllers/user'));
+app.use('/api/jobs', require('./controllers/jobsposting'));
 app.use('/api/applications', require('./controllers/applycation'));
+app.use('/api/auth', require('./controllers/authorization'));
+app.use('/api/home', require('./controllers/home'));
 
-
-// Custom error handling middleware
-app.use(errorHandler);
-
-// Handle 404 errors for undefined routes
-app.use((req, res) => {
+// Handle 404 errors
+app.use((req, res, next) => {
     res.status(404).json({
         success: false,
-        message: 'Resource not found'
+        message: 'Endpoint not found',
     });
 });
 
-// Cổng chạy server
+// Global error handler
+app.use(errorHandler);
+
+// Start server
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
 });

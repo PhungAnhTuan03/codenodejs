@@ -5,8 +5,9 @@ const { JobLocation } = require('../models/joblocation');
 const { ApplicationUser } = require('../models/applicationsuser');
 const { Experience } = require('../models/experience');
 const { Major } = require('../models/major');
-const ErrorResponse = require('../utils/errorResponse');
 const validateRequest = require('../middleware/validateRequest');
+const ErrorResponse = require('../utils/errorResponse');
+const Joi = require('joi');
 
 // Routes
 router.post('/', createJobSchema, createJob);
@@ -19,80 +20,106 @@ module.exports = router;
 
 // Route Handlers
 
-// Tạo bài tuyển dụng mới
-function createJob(req, res, next) {
-    PostJob.create({
-        job_name: req.body.job_name,
-        job_description: req.body.job_description,
-        required_skill: req.body.required_skill,
-        benefit: req.body.benefit,
-        employmentType: req.body.employmentType,
-        salary_min: req.body.salary_min,
-        salary_max: req.body.salary_max,
-        detail_location: req.body.detail_location,
-        create_at: new Date(),
-        update_at: new Date(),
-        apply_date: req.body.apply_date,
-        is_active: req.body.is_active || 1,
-        job_LocationId: req.body.job_LocationId,
-        experienceId: req.body.experienceId,
-        applicationUserId: req.user.id, // ID của nhà tuyển dụng
-        majorId: req.body.majorId
-    })
-        .then((job) => res.status(201).json({ success: true, job }))
-        .catch(next);
+// Create a new job posting
+async function createJob(req, res, next) {
+    try {
+        const job = await PostJob.create({
+            job_name: req.body.job_name,
+            job_description: req.body.job_description,
+            required_skill: req.body.required_skill,
+            benefit: req.body.benefit,
+            employmentType: req.body.employmentType,
+            salary_min: req.body.salary_min,
+            salary_max: req.body.salary_max,
+            detail_location: req.body.detail_location,
+            create_at: new Date(),
+            update_at: new Date(),
+            apply_date: req.body.apply_date,
+            is_active: req.body.is_active || 1,
+            job_LocationId: req.body.job_LocationId,
+            experienceId: req.body.experienceId,
+            applicationUserId: req.user.id, // Recruiter ID
+            majorId: req.body.majorId,
+        });
+        res.status(201).json({ success: true, job });
+    } catch (err) {
+        next(err);
+    }
 }
 
-// Lấy tất cả bài tuyển dụng
-function getAllJobs(req, res, next) {
-    PostJob.findAll({
-        where: { is_active: 1 },
-        include: [
-            { model: JobLocation, attributes: ['province_name'] },
-            { model: ApplicationUser, attributes: ['fullname', 'company_name'] },
-            { model: Experience, attributes: ['experience_name'] },
-            { model: Major, attributes: ['major_name'] }
-        ]
-    })
-        .then((jobs) => res.status(200).json({ success: true, jobs }))
-        .catch(next);
+// Get all job postings
+async function getAllJobs(req, res, next) {
+    try {
+        const jobs = await PostJob.findAll({
+            where: { is_active: 1 },
+            include: [
+                { model: JobLocation, attributes: ['province_name'] },
+                { model: ApplicationUser, attributes: ['fullname', 'company_name'] },
+                { model: Experience, attributes: ['experience_name'] },
+                { model: Major, attributes: ['major_name'] },
+            ],
+        });
+        res.status(200).json({ success: true, jobs });
+    } catch (err) {
+        next(err);
+    }
 }
 
-// Lấy thông tin chi tiết một bài tuyển dụng
-function getJobById(req, res, next) {
-    PostJob.findByPk(req.params.id, {
-        include: [
-            { model: JobLocation, attributes: ['province_name'] },
-            { model: ApplicationUser, attributes: ['fullname', 'company_name'] },
-            { model: Experience, attributes: ['experience_name'] },
-            { model: Major, attributes: ['major_name'] }
-        ]
-    })
-        .then((job) => {
-            if (!job) {
-                return next(new ErrorResponse('Job not found', 404));
-            }
-            res.status(200).json({ success: true, job });
-        })
-        .catch(next);
+// Get a specific job posting by ID
+async function getJobById(req, res, next) {
+    try {
+        const job = await PostJob.findByPk(req.params.id, {
+            include: [
+                { model: JobLocation, attributes: ['province_name'] },
+                { model: ApplicationUser, attributes: ['fullname', 'company_name'] },
+                { model: Experience, attributes: ['experience_name'] },
+                { model: Major, attributes: ['major_name'] },
+            ],
+        });
+
+        if (!job) {
+            return next(new ErrorResponse('Job not found', 404));
+        }
+
+        res.status(200).json({ success: true, job });
+    } catch (err) {
+        next(err);
+    }
 }
 
-// Cập nhật bài tuyển dụng
-function updateJob(req, res, next) {
-    PostJob.update(req.body, { where: { id: req.params.id } })
-        .then((job) => res.status(200).json({ success: true, job }))
-        .catch(next);
+// Update a job posting
+async function updateJob(req, res, next) {
+    try {
+        const job = await PostJob.findByPk(req.params.id);
+
+        if (!job) {
+            return next(new ErrorResponse('Job not found', 404));
+        }
+
+        await job.update(req.body);
+        res.status(200).json({ success: true, message: 'Job updated successfully', job });
+    } catch (err) {
+        next(err);
+    }
 }
 
-// Xóa bài tuyển dụng
-function deleteJob(req, res, next) {
-    PostJob.destroy({ where: { id: req.params.id } })
-        .then(() => res.status(200).json({ success: true, message: 'Job deleted' }))
-        .catch(next);
+// Delete a job posting
+async function deleteJob(req, res, next) {
+    try {
+        const job = await PostJob.findByPk(req.params.id);
+
+        if (!job) {
+            return next(new ErrorResponse('Job not found', 404));
+        }
+
+        await job.destroy();
+        res.status(200).json({ success: true, message: 'Job deleted successfully' });
+    } catch (err) {
+        next(err);
+    }
 }
 
 // Validation Schemas
-const Joi = require('joi');
 
 function createJobSchema(req, res, next) {
     const schema = Joi.object({
@@ -108,7 +135,7 @@ function createJobSchema(req, res, next) {
         is_active: Joi.number().valid(0, 1).default(1),
         job_LocationId: Joi.number().required(),
         experienceId: Joi.number().required(),
-        majorId: Joi.number().required()
+        majorId: Joi.number().required(),
     });
     validateRequest(req, next, schema);
 }
@@ -127,7 +154,7 @@ function updateJobSchema(req, res, next) {
         is_active: Joi.number().valid(0, 1).optional(),
         job_LocationId: Joi.number().optional(),
         experienceId: Joi.number().optional(),
-        majorId: Joi.number().optional()
+        majorId: Joi.number().optional(),
     });
     validateRequest(req, next, schema);
 }
