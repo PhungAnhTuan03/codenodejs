@@ -1,9 +1,8 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../data/db');
 
-const Experience = sequelize.define('Experience', {
-    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    experience_name: { type: DataTypes.STRING, allowNull: false }
-}, { tableName: 'Experience' });
-
-module.exports = Experience;
+module.exports = (sequelize) => {
+    return sequelize.define('Experience', {
+        id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+        experience_name: { type: DataTypes.STRING, allowNull: false }
+    }, { timestamps: false });
+};

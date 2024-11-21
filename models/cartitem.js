@@ -1,16 +1,15 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../data/db');
 
-const CartItem = sequelize.define('CartItem', {
-    PostJobId: { type: DataTypes.INTEGER, primaryKey: true, references: { model: 'PostJob', key: 'id' } },
-    JobName: DataTypes.STRING,
-    CompanyName: DataTypes.STRING,
-    ProvinceName: DataTypes.STRING,
-    SalaryMin: DataTypes.INTEGER,
-    SalaryMax: DataTypes.INTEGER,
-    EmployerType: DataTypes.STRING,
-    ApplyDate: DataTypes.DATE,
-    imageUrl: DataTypes.STRING
-});
-
-module.exports = CartItem;
+module.exports = (sequelize) => {
+    return sequelize.define('CartItem', {
+        postJobId: { type: DataTypes.INTEGER, primaryKey: true },
+        jobName: { type: DataTypes.STRING },
+        companyName: { type: DataTypes.STRING },
+        provinceName: { type: DataTypes.STRING },
+        salaryMin: { type: DataTypes.INTEGER },
+        salaryMax: { type: DataTypes.INTEGER },
+        employerType: { type: DataTypes.STRING },
+        applyDate: { type: DataTypes.DATE },
+        imageUrl: { type: DataTypes.STRING }
+    }, { timestamps: false });
+};

@@ -1,74 +1,38 @@
-// const mysql = require('mysql2');
-// const { Sequelize } = require('sequelize');
-
-// const con = mysql.createConnection({
-//     host: "127.0.0.1",
-//     user: "root",
-//     password: "123456",
-//     database: "qlitimviec"
-// });
-
-// // Function to format table output
-// const formatTableOutput = (tableName, rows) => {
-//     console.log(`\n=== Data in Table: ${tableName} ===`);
-//     if (rows.length === 0) {
-//         console.log("No data available in this table.");
-//         return;
-//     }
-
-//     // Get column names
-//     const columns = Object.keys(rows[0]);
-//     const separator = '-'.repeat(50);
-
-//     // Print column headers
-//     console.log(separator);
-//     console.log(columns.join(' | '));
-//     console.log(separator);
-
-//     // Print each row of data
-//     rows.forEach(row => {
-//         console.log(columns.map(col => row[col]).join(' | '));
-//     });
-//     console.log(separator);
-// };
-
-// con.connect((err) => {
-//     if (err) throw err;
-//     console.log("Connected to MySQL!");
-
-//     // Query to get all tables in the database
-//     con.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'qlitimviec'", (err, tables) => {
-//         if (err) throw err;
-
-//         // For each table, get its data
-//         tables.forEach(table => {
-//             const tableName = table.TABLE_NAME || table.table_name;
-
-//             // Query to get all data from each table
-//             con.query(`SELECT * FROM \`${tableName}\``, (err, rows) => {
-//                 if (err) {
-//                     console.log(`Error fetching data from table ${tableName}:`, err);
-//                 } else {
-//                     formatTableOutput(tableName, rows);
-//                 }
-//             });
-//         });
-//     });
-// });
-
-// module.exports = con;
-
-
-// db.js - Sequelize initialization
+const mysql = require('mysql2/promise');
 const { Sequelize } = require('sequelize');
 
-const sequelize = new Sequelize('qlitimviec', 'root', '123456', {
-    host: '127.0.0.1',
-    dialect: 'mysql'
-});
+module.exports = db = {};
 
-sequelize.authenticate()
-    .then(() => console.log('Database connected with Sequelize!'))
-    .catch(err => console.error('Unable to connect to the database:', err));
+initialize();
 
-module.exports = sequelize;
+async function initialize() {
+    // Cấu hình cơ sở dữ liệu
+    const dbConfig = {
+        host: 'localhost', // Thay bằng địa chỉ máy chủ của bạn
+        port: 3306,        // Thay bằng cổng của MySQL
+        user: 'root',      // Thay bằng tên người dùng MySQL
+        password: '123456', // Thay bằng mật khẩu MySQL
+        database: 'qlitimviec' // Thay bằng tên cơ sở dữ liệu
+    };
+
+    // Tạo cơ sở dữ liệu nếu chưa tồn tại
+    const connection = await mysql.createConnection({
+        host: dbConfig.host,
+        port: dbConfig.port,
+        user: dbConfig.user,
+        password: dbConfig.password
+    });
+    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\`;`);
+
+    // Kết nối với cơ sở dữ liệu
+    const sequelize = new Sequelize(dbConfig.database, dbConfig.user, dbConfig.password, {
+        host: dbConfig.host,
+        dialect: 'mysql',
+    });
+
+    // Khởi tạo models và thêm vào đối tượng db
+    db.User = require('../users/user.model')(sequelize);
+
+    // Đồng bộ hóa tất cả các models với cơ sở dữ liệu
+    await sequelize.sync({ alter: true });
+}

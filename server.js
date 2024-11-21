@@ -7,6 +7,10 @@ const homeRoutes = require('./routes/homeRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const applicationRoutes = require('./routes/applicationRoutes');
 const authorizationRoutes = require('./routes/authorizationRoutes');
+// const { connectDB } = require('./data/db');
+
+// Kết nối cơ sở dữ liệu
+// connectDB();
 
 // Load environment variables
 dotenv.config();
@@ -28,6 +32,8 @@ app.use('/api/user', userRoutes);
 app.use('/api/home', homeRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/auth', authorizationRoutes);
+app.use('/api/applications', require('./controllers/applycation'));
+
 
 // Custom error handling middleware
 app.use(errorHandler);
